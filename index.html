@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雜糧／特作淨零農耕 — 場域協作與資料整備工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Microsoft JhengHei','PingFang TC',sans-serif;background:#f0f2f5;color:#333;font-size:15px}
+a{color:#2563eb;text-decoration:none}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
+
+/* MODE BAR */
+.mode-bar{position:fixed;top:0;left:0;right:0;z-index:9999;background:#1e293b;display:flex;align-items:center;height:52px;padding:0 20px;gap:10px}
+.mode-bar h1{color:#fff;font-size:13px;flex:1;white-space:nowrap;overflow:hidden;opacity:.9}
+.mode-btn{padding:7px 18px;border:none;border-radius:20px;font-size:12px;font-weight:600;transition:.2s}
+.mode-btn.active{background:#22c55e;color:#fff}
+.mode-btn:not(.active){background:#475569;color:#cbd5e1}
+
+/* ===== OVERVIEW ===== */
+.overview-app{display:none;margin-top:52px;max-width:1200px;margin-left:auto;margin-right:auto;padding:28px 32px 60px}
+.overview-app.show{display:block}
+
+.ov-hero{background:linear-gradient(135deg,#0f4c3a 0%,#15803d 50%,#166534 100%);color:#fff;border-radius:16px;padding:36px 40px;margin-bottom:28px;position:relative;overflow:hidden}
+.ov-hero::after{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;background:rgba(255,255,255,.06);border-radius:50%}
+.ov-hero h2{font-size:23px;font-weight:800;margin-bottom:10px;position:relative}
+.ov-hero .subtitle{font-size:14px;opacity:.92;line-height:1.8;position:relative}
+.ov-hero .tags{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;position:relative}
+.ov-hero .tag{background:rgba(255,255,255,.18);padding:4px 14px;border-radius:16px;font-size:12px;font-weight:600}
+
+/* positioning box */
+.ov-position{background:#fff;border-radius:14px;padding:24px 28px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid #16a34a}
+.ov-position h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:10px}
+.ov-position p{font-size:13px;color:#374151;line-height:1.8}
+.ov-position .highlight{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;color:#15803d;font-weight:600;line-height:1.7}
+
+/* role cards */
+.role-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.role-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-top:3px solid #e2e8f0}
+.role-card.primary{border-top-color:#16a34a}
+.role-card.secondary{border-top-color:#2563eb}
+.role-card.support{border-top-color:#f59e0b}
+.role-card.info{border-top-color:#94a3b8}
+.role-card .icon{font-size:28px;margin-bottom:6px}
+.role-card h4{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.role-card p{font-size:11px;color:#64748b;line-height:1.6}
+.role-card .role-tag{font-size:10px;font-weight:700;color:#fff;padding:2px 8px;border-radius:6px;display:inline-block;margin-bottom:6px}
+.role-card .role-tag.core{background:#16a34a}
+.role-card .role-tag.collab{background:#2563eb}
+.role-card .role-tag.simple{background:#f59e0b}
+.role-card .role-tag.light{background:#94a3b8}
+
+/* lightweight box */
+.ov-lightweight{background:#fff;border-radius:14px;padding:24px 28px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ov-lightweight h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:14px}
+.lw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.lw-item{background:#f8fafc;border-radius:10px;padding:14px;text-align:center}
+.lw-item .icon{font-size:24px;margin-bottom:4px}
+.lw-item .label{font-size:12px;font-weight:700;color:#0f172a;margin-bottom:2px}
+.lw-item .desc{font-size:11px;color:#64748b}
+
+/* flow chain */
+.ov-flow{background:#fff;border-radius:14px;padding:28px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ov-flow h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.ov-flow .desc{font-size:13px;color:#64748b;margin-bottom:18px}
+.flow-chain{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px}
+.flow-step{flex:1;min-width:110px;text-align:center;position:relative;padding:0 3px}
+.flow-step .num{width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
+.flow-step .label{font-size:11px;font-weight:700;color:#0f172a;margin-bottom:3px;line-height:1.3}
+.flow-step .detail{font-size:10px;color:#64748b;line-height:1.4}
+.flow-step .tool-tag{font-size:9px;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;padding:1px 6px;border-radius:8px;display:inline-block;margin-top:3px}
+.flow-arrow{display:flex;align-items:center;color:#d1d5db;font-size:16px;flex-shrink:0;margin-top:-16px}
+
+/* audit chain */
+.ov-audit{background:#fff;border-radius:14px;padding:28px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ov-audit h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.ov-audit .desc{font-size:13px;color:#64748b;margin-bottom:18px}
+.audit-chain{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center}
+.audit-node{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;text-align:center;min-width:90px}
+.audit-node.farmer{background:#f0fdf4;border-color:#bbf7d0}
+.audit-node.api{background:#eff6ff;border-color:#bfdbfe}
+.audit-node.contractor{background:#fefce8;border-color:#fde68a}
+.audit-node.output{background:#f0f9ff;border-color:#7dd3fc}
+.audit-node .icon{font-size:18px;margin-bottom:2px}
+.audit-node .name{font-size:10px;font-weight:700;color:#0f172a}
+.audit-node .src{font-size:9px;color:#6b7280;margin-top:1px}
+.audit-arrow{color:#94a3b8;font-size:14px;margin:0 2px}
+
+/* deliverable */
+.ov-deliver{background:#fff;border-radius:14px;padding:28px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ov-deliver h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.ov-deliver .desc{font-size:13px;color:#64748b;margin-bottom:18px}
+.deliver-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.deliver-card{border:1px solid #e2e8f0;border-radius:12px;padding:18px}
+.deliver-card .phase{font-size:11px;font-weight:700;color:#fff;padding:2px 10px;border-radius:8px;display:inline-block;margin-bottom:8px}
+.deliver-card .phase.p1{background:#16a34a}
+.deliver-card .phase.p2{background:#2563eb}
+.deliver-card .phase.p3{background:#7c3aed}
+.deliver-card h4{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px}
+.deliver-card ul{list-style:none;padding:0}
+.deliver-card li{font-size:12px;color:#374151;padding:3px 0;display:flex;align-items:start;gap:6px}
+.deliver-card li::before{content:'✓';color:#16a34a;font-weight:700;flex-shrink:0}
+.deliver-card .tool-support{margin-top:10px;padding-top:8px;border-top:1px solid #f1f5f9;font-size:11px;color:#16a34a;font-weight:600}
+
+/* crop cards */
+.crop-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.crop-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.crop-card h4{font-size:15px;font-weight:700;color:#15803d;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.crop-tag{font-size:10px;background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px;font-weight:600}
+.crop-card .measures{font-size:11px;color:#6b7280;line-height:1.6}
+
+/* enterprise summary */
+.ov-enterprise{background:#fff;border-radius:14px;padding:24px 28px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ov-enterprise h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.ov-enterprise .desc{font-size:13px;color:#64748b;margin-bottom:16px}
+.ent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ent-card{border-radius:10px;padding:14px}
+.ent-card.public{background:#f0fdf4;border:1px solid #bbf7d0}
+.ent-card.internal{background:#fefce8;border:1px solid #fde68a}
+.ent-card.confidential{background:#fef2f2;border:1px solid #fecaca}
+.ent-card h5{font-size:12px;font-weight:700;margin-bottom:6px}
+.ent-card ul{list-style:none;padding:0}
+.ent-card li{font-size:11px;color:#374151;padding:2px 0}
+
+/* ===== FARMER ===== */
+.farmer-app{max-width:420px;margin:68px auto 20px;background:#fff;min-height:calc(100vh - 88px);border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.12);overflow:hidden;display:none}
+.farmer-app.show{display:block}
+.f-header{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:16px 20px 14px;display:flex;align-items:center;gap:12px}
+.f-header .back-btn{background:none;border:none;color:#fff;font-size:20px;display:none}
+.f-header .back-btn.show{display:block}
+.f-header h2{font-size:17px;flex:1}
+.f-header .avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px}
+.f-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:#fff;border-top:1px solid #e5e7eb;display:flex;z-index:100}
+.f-bottom-nav button{flex:1;padding:8px 0 6px;border:none;background:none;font-size:11px;color:#9ca3af;display:flex;flex-direction:column;align-items:center;gap:2px}
+.f-bottom-nav button.active{color:#16a34a}
+.f-bottom-nav button .icon{font-size:20px}
+.f-page{display:none;padding:16px 20px 80px;min-height:60vh}
+.f-page.show{display:block}
+.f-welcome{padding:20px 0 6px;font-size:18px;font-weight:700;color:#15803d}
+.f-welcome-sub{font-size:12px;color:#6b7280;margin-bottom:12px}
+.f-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.f-action-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:18px 14px;text-align:center;cursor:pointer;transition:.15s}
+.f-action-card:hover{background:#dcfce7;transform:translateY(-1px)}
+.f-action-card .icon{font-size:32px;margin-bottom:6px}
+.f-action-card .label{font-size:13px;font-weight:600;color:#15803d}
+.f-section-title{font-size:14px;font-weight:700;color:#374151;margin:20px 0 10px;display:flex;align-items:center;gap:6px}
+.f-reminder{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;color:#92400e;display:flex;align-items:start;gap:8px}
+.f-reminder .icon{font-size:16px;flex-shrink:0}
+.f-record-item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.f-record-item:hover{background:#f3f4f6}
+.f-record-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.f-record-item .dot.green{background:#22c55e}
+.f-record-item .dot.yellow{background:#eab308}
+.f-record-item .info{flex:1;font-size:13px}
+.f-record-item .info .title{font-weight:600;color:#111}
+.f-record-item .info .meta{color:#6b7280;font-size:12px;margin-top:2px}
+.f-record-item .arrow{color:#9ca3af;font-size:16px}
+.f-form-group{margin-bottom:16px}
+.f-form-group label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px}
+.f-form-group label .auto-tag{font-size:11px;color:#2563eb;font-weight:400;margin-left:4px;background:#eff6ff;padding:1px 6px;border-radius:8px}
+.f-form-group label .required{color:#ef4444;margin-left:2px}
+.f-input{width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;transition:.2s;background:#fff}
+.f-input:focus{outline:none;border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+select.f-input{appearance:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 14px center #fff}
+.f-photo-btn{width:100%;padding:28px 14px;border:2px dashed #bbf7d0;border-radius:14px;background:#f0fdf4;text-align:center;color:#15803d;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+.f-photo-btn:hover{background:#dcfce7}
+.f-submit-btn{width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:16px;font-weight:700;margin-top:8px;transition:.15s}
+.f-submit-btn:hover{opacity:.9}
+.f-step-indicator{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
+.f-step{width:10px;height:10px;border-radius:50%;background:#d1d5db}
+.f-step.active{background:#16a34a;width:28px;border-radius:5px}
+.f-step.done{background:#86efac}
+.f-copy-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid #16a34a;border-radius:8px;background:#f0fdf4;color:#15803d;font-size:12px;font-weight:600;margin-top:6px}
+.f-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.f-filter-chip{padding:6px 14px;border:1px solid #d1d5db;border-radius:20px;font-size:12px;background:#fff;color:#374151;cursor:pointer}
+.f-filter-chip.active{background:#16a34a;color:#fff;border-color:#16a34a}
+.f-field-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:16px;margin-bottom:12px}
+.f-field-card .name{font-size:16px;font-weight:700;color:#15803d;margin-bottom:8px}
+.f-field-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #ecfdf5}
+.f-field-row .k{color:#6b7280}
+.f-field-row .v{font-weight:600;color:#111}
+.f-admin-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-top:12px;font-size:12px;color:#1e40af}
+
+/* ===== CONTRACTOR MAIN ===== */
+.contractor-app{display:none;margin-top:52px}
+.contractor-app.show{display:block}
+.c-layout{display:flex;min-height:calc(100vh - 52px)}
+.c-sidebar{width:230px;background:#1e293b;color:#fff;padding:20px 0;flex-shrink:0;position:fixed;top:52px;bottom:0;overflow-y:auto}
+.c-sidebar .logo{padding:0 18px 16px;font-size:12px;font-weight:700;color:#22c55e;border-bottom:1px solid #334155;line-height:1.5}
+.c-sidebar .nav-section{padding:14px 18px 4px;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px}
+.c-sidebar .nav-item{padding:9px 18px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:9px;color:#cbd5e1;transition:.15s}
+.c-sidebar .nav-item:hover{background:#334155;color:#fff}
+.c-sidebar .nav-item.active{background:#334155;color:#22c55e;border-right:3px solid #22c55e}
+.c-main{margin-left:230px;flex:1;padding:24px 28px;background:#f8fafc}
+.c-page{display:none}
+.c-page.show{display:block}
+.c-page-header{margin-bottom:22px}
+.c-page-header h2{font-size:20px;font-weight:700;color:#0f172a}
+.c-page-header p{font-size:13px;color:#64748b;margin-top:4px}
+.c-collab-tag{display:inline-block;font-size:10px;font-weight:600;background:#eff6ff;color:#2563eb;padding:2px 8px;border-radius:6px;margin-left:8px}
+
+.c-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.c-stat-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.c-stat-card .value{font-size:24px;font-weight:700;color:#0f172a}
+.c-stat-card .label{font-size:11px;color:#64748b;margin-top:3px}
+.c-stat-card .trend{font-size:11px;color:#16a34a;margin-top:3px}
+
+.c-section{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:18px;margin-bottom:18px}
+.c-section h3{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px}
+
+.c-table-wrap{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow-x:auto}
+.c-table{width:100%;border-collapse:collapse;font-size:12px}
+.c-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-weight:600;color:#475569;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+.c-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.c-table tr:hover td{background:#f8fafc}
+
+.c-badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:600}
+.c-badge.green{background:#dcfce7;color:#15803d}
+.c-badge.yellow{background:#fef9c3;color:#a16207}
+.c-badge.blue{background:#dbeafe;color:#1d4ed8}
+.c-badge.gray{background:#f3f4f6;color:#6b7280}
+.c-badge.purple{background:#f3e8ff;color:#7c3aed}
+
+.c-progress-bar{height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:4px}
+.c-progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#22c55e,#16a34a)}
+
+.c-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.c-detail-item{padding:10px 12px;background:#f8fafc;border-radius:8px}
+.c-detail-item .k{font-size:10px;color:#64748b;margin-bottom:2px}
+.c-detail-item .v{font-size:13px;font-weight:600;color:#0f172a}
+.c-detail-item .source{font-size:9px;color:#2563eb;margin-top:2px}
+
+.c-checklist{list-style:none;padding:0}
+.c-checklist li{padding:7px 10px;font-size:12px;border-bottom:1px solid #f8fafc;display:flex;align-items:center;gap:7px}
+.c-checklist li .check{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.c-checklist li .check.pass{background:#dcfce7;color:#16a34a}
+.c-checklist li .check.warn{background:#fef9c3;color:#ca8a04}
+.c-checklist li .check.pending{background:#f3f4f6;color:#6b7280}
+
+.c-tabs{display:flex;gap:0;margin-bottom:18px;border-bottom:2px solid #e2e8f0;flex-wrap:wrap}
+.c-tab{padding:8px 16px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.c-tab.active{color:#16a34a;border-bottom-color:#16a34a}
+
+.c-note-input{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;resize:vertical;min-height:50px}
+.c-btn{padding:7px 16px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.c-btn-primary{background:#16a34a;color:#fff}
+.c-btn-outline{background:#fff;color:#374151;border:1px solid #d1d5db}
+.c-btn:hover{opacity:.85}
+
+.diff-box{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+.diff-col{border:1px solid #e2e8f0;border-radius:10px;padding:14px}
+.diff-col h5{font-size:12px;font-weight:700;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #f1f5f9}
+.diff-col.grain h5{color:#b45309}
+.diff-col.special h5{color:#0369a1}
+.diff-col ul{list-style:none;padding:0}
+.diff-col li{font-size:11px;color:#374151;padding:2px 0 2px 14px;position:relative}
+.diff-col li::before{content:'•';position:absolute;left:3px;color:#94a3b8}
+
+.next-step-box{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #bbf7d0;border-radius:10px;padding:16px;margin-top:14px}
+.next-step-box h4{font-size:13px;font-weight:700;color:#15803d;margin-bottom:8px}
+.next-step-box ol{padding-left:18px;font-size:12px;color:#374151;line-height:1.8}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:20px;padding:32px;text-align:center;max-width:320px;width:90%}
+.modal-box .icon{font-size:48px;margin-bottom:12px}
+.modal-box h3{font-size:18px;margin-bottom:8px;color:#15803d}
+.modal-box p{font-size:14px;color:#6b7280;margin-bottom:20px}
+.modal-box button{padding:12px 32px;border:none;border-radius:10px;background:#16a34a;color:#fff;font-size:15px;font-weight:600}
+
+@media(max-width:900px){
+  .deliver-grid,.crop-grid,.ent-grid,.diff-box,.role-grid{grid-template-columns:1fr}
+  .flow-chain{flex-wrap:wrap;justify-content:center}
+  .flow-arrow{display:none}
+  .contractor-app .c-sidebar{display:none}
+  .contractor-app .c-main{margin-left:0;padding:16px}
+  .c-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- MODE BAR -->
+<div class="mode-bar">
+  <h1>雜糧／特作淨零農耕 — 場域協作與資料整備工具</h1>
+  <button class="mode-btn active" onclick="switchMode('overview')">📋 履約總覽</button>
+  <button class="mode-btn" onclick="switchMode('contractor')">🏢 契作主體端</button>
+  <button class="mode-btn" onclick="switchMode('farmer')">📱 農民端</button>
+</div>
+
+<!-- ████ OVERVIEW ████ -->
+<div class="overview-app show" id="overviewApp">
+
+  <div class="ov-hero">
+    <h2>雜糧／特作淨零農耕技術落地應用 — 場域協作與資料整備工具</h2>
+    <div class="subtitle">
+      本工具以契作主體為管理核心，搭配農民簡易填報機制，支撐場域資料彙整、方法學整備、合作追蹤與成果輸出。<br>
+      執行單位以協作方式提供技術導入、資料整備與媒合支援，不另建重度獨立系統。
+    </div>
+    <div class="tags">
+      <span class="tag">雜糧：大豆、硬質玉米</span>
+      <span class="tag">特作：油茶、茶園</span>
+      <span class="tag">輕量化設計</span>
+      <span class="tag">加值工作項</span>
+    </div>
+  </div>
+
+  <!-- POSITIONING -->
+  <div class="ov-position">
+    <h3>平台定位</h3>
+    <p>本工具屬加值工作項，以可行、可落地、可支撐履約為原則，控制技術難度與維運成本。不建構完整四方平台，而是聚焦於契作主體的實際管理需求，搭配農民端簡易填報與執行單位協作支援，形成輕量但完整的資料鏈。</p>
+    <div class="highlight">
+      以契作主體為核心的場域協作與資料整備工具，搭配底下農民的簡易填報介面。
+    </div>
+  </div>
+
+  <!-- ROLE CARDS -->
+  <div class="role-grid">
+    <div class="role-card primary">
+      <div class="icon">🏢</div>
+      <span class="role-tag core">核心使用者</span>
+      <h4>契作主體</h4>
+      <p>管理旗下農民、地塊、填報狀況、缺漏提醒、場域資料完整度、合作與契約進度。平台主要操作角色。</p>
+    </div>
+    <div class="role-card secondary">
+      <div class="icon">🔬</div>
+      <span class="role-tag collab">協作支援</span>
+      <h4>執行單位（我們）</h4>
+      <p>協助技術導入、資料整備、方法學判讀、MRV、草案撰擬、企業媒合與契約協商。以協作與匯出支援為主，不做重度獨立後台。</p>
+    </div>
+    <div class="role-card support">
+      <div class="icon">👨‍🌾</div>
+      <span class="role-tag simple">簡易填報</span>
+      <h4>農民</h4>
+      <p>契作主體旗下之農民。手機填報日常管理活動（施肥、灌溉、草生管理等），不承擔複雜判讀工作。</p>
+    </div>
+    <div class="role-card info">
+      <div class="icon">🏭</div>
+      <span class="role-tag light">資訊接收</span>
+      <h4>企業端</h4>
+      <p>不另建獨立登入平台。以成果摘要、合作資訊與契約協商進度呈現即可，降低整體開發範圍。</p>
+    </div>
+  </div>
+
+  <!-- LIGHTWEIGHT -->
+  <div class="ov-lightweight">
+    <h3>輕量化設計 — 控制技術難度與維運成本</h3>
+    <div class="lw-grid">
+      <div class="lw-item">
+        <div class="icon">📱</div>
+        <div class="label">農民端手機填報</div>
+        <div class="desc">僅需 6 個欄位即可完成一筆紀錄，無需安裝 App</div>
+      </div>
+      <div class="lw-item">
+        <div class="icon">🏢</div>
+        <div class="label">契作主體集中管理</div>
+        <div class="desc">旗下農民、地塊、填報、缺漏一站追蹤</div>
+      </div>
+      <div class="lw-item">
+        <div class="icon">🔬</div>
+        <div class="label">執行單位協作</div>
+        <div class="desc">技術判讀與匯出支援，不另建獨立後台</div>
+      </div>
+      <div class="lw-item">
+        <div class="icon">🏭</div>
+        <div class="label">企業端摘要呈現</div>
+        <div class="desc">不建獨立系統，以匯出報告與摘要頁支援</div>
+      </div>
+      <div class="lw-item">
+        <div class="icon">🔗</div>
+        <div class="label">API 減少手填</div>
+        <div class="desc">串接農業部開放資料，肥料成分、氣象站自動帶入</div>
+      </div>
+      <div class="lw-item">
+        <div class="icon">💰</div>
+        <div class="label">低維運成本</div>
+        <div class="desc">PWA 網頁應用、無需原生 App 開發與上架</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW -->
+  <div class="ov-flow">
+    <h3>履約執行流程 — 工具如何支撐各階段工作</h3>
+    <div class="desc">每一階段標示主要負責角色與對應工具模組。</div>
+    <div class="flow-chain">
+      <div class="flow-step"><div class="num">1</div><div class="label">潛在場域盤點</div><div class="detail">場域篩選與條件初評</div><div class="tool-tag">契作主體</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">2</div><div class="label">企業媒合</div><div class="detail">合作意願與潛力評估</div><div class="tool-tag">執行單位協作</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">3</div><div class="label">說明會與現勘</div><div class="detail">實地調查與農民溝通</div><div class="tool-tag">契作主體+執行單位</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">4</div><div class="label">農民日常填報</div><div class="detail">施肥、灌溉、草生管理</div><div class="tool-tag">農民端</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">5</div><div class="label">方法學判讀</div><div class="detail">適用性檢核與資料整備</div><div class="tool-tag">執行單位協作</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">6</div><div class="label">MRV 與草案</div><div class="detail">基線設定、草案撰擬</div><div class="tool-tag">執行單位協作</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">7</div><div class="label">契約協商</div><div class="detail">合作範疇與保密安排</div><div class="tool-tag">契作主體+執行單位</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="num">8</div><div class="label">長期合作</div><div class="detail">5 年追蹤與擴散</div><div class="tool-tag">全平台</div></div>
+    </div>
+  </div>
+
+  <!-- AUDIT CHAIN -->
+  <div class="ov-audit">
+    <h3>資料形成查核鏈</h3>
+    <div class="desc">每筆資料均可追溯來源與確認狀態，支撐查證需求。</div>
+    <div class="audit-chain">
+      <div class="audit-node farmer"><div class="icon">👨‍🌾</div><div class="name">農民填報</div><div class="src">場域、日期、資材<br>用量、照片</div></div>
+      <div class="audit-arrow">→</div>
+      <div class="audit-node api"><div class="icon">🔗</div><div class="name">API 帶入</div><div class="src">肥料成分<br>氣象、雨量</div></div>
+      <div class="audit-arrow">→</div>
+      <div class="audit-node contractor"><div class="icon">🏢</div><div class="name">契作主體確認</div><div class="src">審核紀錄<br>缺漏提醒</div></div>
+      <div class="audit-arrow">→</div>
+      <div class="audit-node contractor"><div class="icon">🔬</div><div class="name">執行單位協作</div><div class="src">採樣、方法學<br>MRV 整備</div></div>
+      <div class="audit-arrow">→</div>
+      <div class="audit-node output"><div class="icon">📄</div><div class="name">成果產出</div><div class="src">草案、報告<br>合作摘要</div></div>
+    </div>
+  </div>
+
+  <!-- CROPS -->
+  <div class="crop-grid">
+    <div class="crop-card">
+      <h4>🌾 雜糧場域 <span class="crop-tag">大豆</span> <span class="crop-tag">硬質玉米</span></h4>
+      <div class="measures">
+        <strong>方法學：</strong>AL-TMS0001（改進農業土壤管理）<br>
+        <strong>管理措施：</strong>有機質投入、合理化施肥、殘體管理、低度耕作<br>
+        <strong>判讀重點：</strong>氮肥與固氮排放、管理措施變更幅度
+      </div>
+    </div>
+    <div class="crop-card">
+      <h4>🌳 特作場域 <span class="crop-tag">油茶</span> <span class="crop-tag">茶園</span></h4>
+      <div class="measures">
+        <strong>方法學：</strong>AL-TMS0001 + AL-TMS0004 草生管理參考<br>
+        <strong>管理措施：</strong>草生栽培、覆蓋管理、有機質基肥<br>
+        <strong>判讀重點：</strong>草生穩定性、覆蓋率、管理條件
+      </div>
+    </div>
+  </div>
+
+  <!-- DELIVERABLES -->
+  <div class="ov-deliver">
+    <h3>三期交付成果 — 工具對應各期產出</h3>
+    <div class="desc">本工具於各期提供對應之資料蒐集、管理與產出支援。</div>
+    <div class="deliver-grid">
+      <div class="deliver-card">
+        <span class="phase p1">第 1 期</span>
+        <h4>場域盤點與企業媒合</h4>
+        <ul>
+          <li>潛在場域清單與條件初評</li>
+          <li>企業媒合名單與合作潛力評估</li>
+          <li>現勘紀錄與影像佐證</li>
+        </ul>
+        <div class="tool-support">契作主體管理 + 執行單位協作</div>
+      </div>
+      <div class="deliver-card">
+        <span class="phase p2">第 2 期</span>
+        <h4>可行性報告與資料品質</h4>
+        <ul>
+          <li>方法學適用性評估</li>
+          <li>土壤採樣與基線整備</li>
+          <li>資料品質管理（查核鏈）</li>
+        </ul>
+        <div class="tool-support">執行單位協作 + 農民端填報</div>
+      </div>
+      <div class="deliver-card">
+        <span class="phase p3">第 3 期</span>
+        <h4>草案與契約簽訂</h4>
+        <ul>
+          <li>自願減量專案申請草案</li>
+          <li>MRV 基礎架構</li>
+          <li>契約協商與媒合實績</li>
+        </ul>
+        <div class="tool-support">全平台協作產出</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTERPRISE SUMMARY -->
+  <div class="ov-enterprise">
+    <h3>企業端資訊呈現 — 不另建獨立系統</h3>
+    <div class="desc">企業端以成果摘要與合作資訊呈現，不建構獨立登入平台，降低整體開發範圍。</div>
+    <div class="ent-grid">
+      <div class="ent-card public">
+        <h5 style="color:#15803d">🟢 可供 ESG 溝通</h5>
+        <ul>
+          <li>場域面積與作物（去識別化）</li>
+          <li>管理措施類型</li>
+          <li>方法學適用結果</li>
+          <li>預估減碳量</li>
+        </ul>
+      </div>
+      <div class="ent-card internal">
+        <h5 style="color:#a16207">🟡 管理與查證用</h5>
+        <ul>
+          <li>土壤採樣數據</li>
+          <li>農民填報紀錄</li>
+          <li>方法學判讀細節</li>
+          <li>MRV 活動數據</li>
+        </ul>
+      </div>
+      <div class="ent-card confidential">
+        <h5 style="color:#b91c1c">🔴 契約保密範圍</h5>
+        <ul>
+          <li>農戶個人資料</li>
+          <li>精確座標與地號</li>
+          <li>契約條件與金額</li>
+          <li>財務分析細節</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /overview -->
+
+
+<!-- ████ FARMER APP ████ -->
+<div class="farmer-app" id="farmerApp">
+  <div class="f-header">
+    <button class="back-btn" id="fBackBtn" onclick="farmerBack()">←</button>
+    <h2 id="fHeaderTitle">農耕紀錄</h2>
+    <div class="avatar">👨‍🌾</div>
+  </div>
+
+  <div class="f-page show" id="fHome">
+    <div class="f-welcome">你好，王大明 👋</div>
+    <div class="f-welcome-sub">只要記錄基本作業資訊，其餘由契作主體與系統處理。</div>
+    <div class="f-quick-actions">
+      <div class="f-action-card" onclick="farmerGo('record')"><div class="icon">📝</div><div class="label">快速填報</div></div>
+      <div class="f-action-card" onclick="farmerGo('history')"><div class="icon">📋</div><div class="label">歷史紀錄</div></div>
+      <div class="f-action-card" onclick="farmerGo('fields')"><div class="icon">🗺️</div><div class="label">我的場域</div></div>
+      <div class="f-action-card" onclick="farmerGo('record')"><div class="icon">🔄</div><div class="label">複製上次</div></div>
+    </div>
+    <div class="f-section-title">⏰ 今日提醒</div>
+    <div class="f-reminder"><span class="icon">🔔</span><span>大豆田 A 區已 7 天未填報施肥紀錄，建議補填。</span></div>
+    <div class="f-reminder"><span class="icon">📸</span><span>油茶園 B 區本月需上傳草生覆蓋照片。</span></div>
+    <div class="f-section-title">📄 最近填報</div>
+    <div class="f-record-item" onclick="farmerGo('history')"><div class="dot green"></div><div class="info"><div class="title">大豆田 A 區 — 施肥</div><div class="meta">2026-03-27 ・台肥 5 號 ・30 kg</div></div><div class="arrow">›</div></div>
+    <div class="f-record-item" onclick="farmerGo('history')"><div class="dot green"></div><div class="info"><div class="title">油茶園 B 區 — 草生管理</div><div class="meta">2026-03-25 ・割草 ・已附照片</div></div><div class="arrow">›</div></div>
+    <div class="f-record-item" onclick="farmerGo('history')"><div class="dot yellow"></div><div class="info"><div class="title">硬質玉米田 D 區 — 灌溉</div><div class="meta">2026-03-22 ・待補充用水量</div></div><div class="arrow">›</div></div>
+  </div>
+
+  <div class="f-page" id="fRecord">
+    <div class="f-step-indicator"><div class="f-step active" id="step1dot"></div><div class="f-step" id="step2dot"></div></div>
+    <div id="recordStep1">
+      <div class="f-form-group"><label>場域 <span class="required">*</span></label><select class="f-input"><option>請選擇場域</option><option selected>大豆田 A 區（台南市後壁區）</option><option>油茶園 B 區（嘉義縣中埔鄉）</option><option>硬質玉米田 D 區（彰化縣二林鎮）</option><option>茶園 E 區（南投縣名間鄉）</option></select></div>
+      <div class="f-form-group"><label>作物 <span class="auto-tag">系統帶入</span></label><input class="f-input" value="大豆（台南10號）" readonly style="background:#f0fdf4;color:#15803d"></div>
+      <div class="f-form-group"><label>日期 <span class="required">*</span></label><input type="date" class="f-input" value="2026-03-29"></div>
+      <div class="f-form-group"><label>作業類型 <span class="required">*</span></label><select class="f-input"><option>請選擇</option><option>整地</option><option selected>施肥</option><option>播種</option><option>灌溉</option><option>病蟲害防治</option><option>草生管理</option><option>收穫</option><option>殘體處理</option><option>其他</option></select></div>
+      <button class="f-submit-btn" onclick="recordNextStep()">下一步 →</button>
+    </div>
+    <div id="recordStep2" style="display:none">
+      <div class="f-form-group"><label>資材名稱 <span class="required">*</span></label><select class="f-input" id="materialSelect" onchange="autoFillMaterial()"><option>請選擇或搜尋</option><option value="taiphos5">台肥 5 號複合肥料</option><option value="organic1">有機質肥料（自製堆肥）</option><option value="urea">尿素</option><option value="other">其他（手動輸入）</option></select></div>
+      <div class="f-form-group" id="autoMaterialInfo" style="display:none">
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;font-size:12px;color:#1e40af">
+          <strong>🔗 系統自動帶入（農業部肥料 API）</strong><br>登記證號：肥製(正)字第 05001 號<br>氮-磷-鉀：16-8-12<br>類型：複合肥料<br><span style="color:#64748b">農民不須填寫以上資訊。</span>
+        </div>
+      </div>
+      <div class="f-form-group"><label>使用量 <span class="required">*</span></label><div style="display:flex;gap:8px"><input type="number" class="f-input" placeholder="例：30" style="flex:2" value="30"><select class="f-input" style="flex:1"><option>kg</option><option>公升</option><option>包</option><option>公噸</option></select></div></div>
+      <div class="f-form-group"><label>施用面積 <span class="auto-tag">系統帶入</span></label><input class="f-input" value="0.8 公頃（場域預設）" readonly style="background:#f0fdf4;color:#15803d"></div>
+      <div class="f-form-group"><label>拍照上傳</label><div class="f-photo-btn" onclick="alert('開啟相機（demo 模擬）')">📷 點擊拍照或上傳照片<br><span style="font-size:11px;font-weight:400;color:#6b7280">照片將作為查證佐證</span></div></div>
+      <div class="f-form-group"><label>備註</label><textarea class="f-input" rows="2" placeholder="選填，可記錄天氣或作業細節"></textarea></div>
+      <button class="f-submit-btn" onclick="submitRecord()">✓ 送出紀錄</button>
+      <button style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#374151;font-size:14px;margin-top:8px" onclick="recordPrevStep()">← 上一步</button>
+    </div>
+  </div>
+
+  <div class="f-page" id="fHistory">
+    <div class="f-filters"><span class="f-filter-chip active">全部</span><span class="f-filter-chip">施肥</span><span class="f-filter-chip">灌溉</span><span class="f-filter-chip">草生管理</span></div>
+    <div class="f-record-item"><div class="dot green"></div><div class="info"><div class="title">大豆田 A 區 — 施肥</div><div class="meta">2026-03-27 ・台肥 5 號 ・30 kg</div><button class="f-copy-btn" onclick="farmerGo('record')">🔄 複製此紀錄</button></div><div class="arrow">›</div></div>
+    <div class="f-record-item"><div class="dot green"></div><div class="info"><div class="title">油茶園 B 區 — 草生管理</div><div class="meta">2026-03-25 ・割草 ・已附照片</div><button class="f-copy-btn" onclick="farmerGo('record')">🔄 複製此紀錄</button></div><div class="arrow">›</div></div>
+    <div class="f-record-item"><div class="dot yellow"></div><div class="info"><div class="title">硬質玉米田 D 區 — 灌溉</div><div class="meta">2026-03-22 ・待補充用水量</div><button class="f-copy-btn" onclick="farmerGo('record')">🔄 複製此紀錄</button></div><div class="arrow">›</div></div>
+    <div class="f-record-item"><div class="dot green"></div><div class="info"><div class="title">大豆田 A 區 — 播種</div><div class="meta">2026-03-15 ・台南10號 ・5 kg</div><button class="f-copy-btn" onclick="farmerGo('record')">🔄 複製此紀錄</button></div><div class="arrow">›</div></div>
+    <div class="f-record-item"><div class="dot green"></div><div class="info"><div class="title">茶園 E 區 — 有機質施肥</div><div class="meta">2026-03-12 ・禽畜糞堆肥 ・150 kg</div><button class="f-copy-btn" onclick="farmerGo('record')">🔄 複製此紀錄</button></div><div class="arrow">›</div></div>
+  </div>
+
+  <div class="f-page" id="fFields">
+    <div class="f-field-card"><div class="name">🌾 大豆田 A 區</div><div class="f-field-row"><span class="k">地點</span><span class="v">台南市後壁區</span></div><div class="f-field-row"><span class="k">作物</span><span class="v">大豆（台南10號）</span></div><div class="f-field-row"><span class="k">面積</span><span class="v">0.8 公頃</span></div><div class="f-field-row"><span class="k">本月紀錄</span><span class="v">5 筆</span></div><div class="f-admin-note">ℹ️ 土壤資料、座標、方法學狀態等進階資訊由契作主體維護。</div></div>
+    <div class="f-field-card"><div class="name">🌳 油茶園 B 區</div><div class="f-field-row"><span class="k">地點</span><span class="v">嘉義縣中埔鄉</span></div><div class="f-field-row"><span class="k">作物</span><span class="v">油茶</span></div><div class="f-field-row"><span class="k">面積</span><span class="v">1.2 公頃</span></div><div class="f-field-row"><span class="k">本月紀錄</span><span class="v">3 筆</span></div><div class="f-admin-note">ℹ️ 土壤資料、座標、方法學狀態等進階資訊由契作主體維護。</div></div>
+    <div class="f-field-card"><div class="name">🌽 硬質玉米田 D 區</div><div class="f-field-row"><span class="k">地點</span><span class="v">彰化縣二林鎮</span></div><div class="f-field-row"><span class="k">作物</span><span class="v">硬質玉米</span></div><div class="f-field-row"><span class="k">面積</span><span class="v">1.0 公頃</span></div><div class="f-field-row"><span class="k">本月紀錄</span><span class="v">2 筆</span></div><div class="f-admin-note">ℹ️ 土壤資料、座標、方法學狀態等進階資訊由契作主體維護。</div></div>
+  </div>
+
+  <div class="f-bottom-nav" id="fBottomNav">
+    <button class="active" onclick="farmerGo('home')"><span class="icon">🏠</span>首頁</button>
+    <button onclick="farmerGo('record')"><span class="icon">📝</span>填報</button>
+    <button onclick="farmerGo('history')"><span class="icon">📋</span>紀錄</button>
+    <button onclick="farmerGo('fields')"><span class="icon">🗺️</span>場域</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="successModal"><div class="modal-box"><div class="icon">✅</div><h3>紀錄已送出！</h3><p>施肥紀錄已儲存，契作主體可即時查閱，系統已自動帶入肥料成分資料。</p><button onclick="closeModal();farmerGo('home')">回首頁</button></div></div>
+
+
+<!-- ████ CONTRACTOR APP ████ -->
+<div class="contractor-app" id="contractorApp">
+  <div class="c-layout">
+    <div class="c-sidebar">
+      <div class="logo">🏢 契作主體管理<br><span style="font-size:10px;color:#94a3b8">× 執行單位協作</span></div>
+      <div class="nav-section">場域管理</div>
+      <div class="nav-item active" onclick="cGo('dashboard')">📊 管理總覽</div>
+      <div class="nav-item" onclick="cGo('farmers')">👨‍🌾 旗下農民</div>
+      <div class="nav-item" onclick="cGo('fields')">🗺️ 地塊清單</div>
+      <div class="nav-section">資料整備（協作）</div>
+      <div class="nav-item" onclick="cGo('methodology')">🔬 方法學整備</div>
+      <div class="nav-item" onclick="cGo('mrv')">📊 MRV／草案</div>
+      <div class="nav-section">合作追蹤</div>
+      <div class="nav-item" onclick="cGo('cooperation')">🤝 合作進度</div>
+      <div class="nav-section">資料品質</div>
+      <div class="nav-item" onclick="cGo('api')">🔗 資料來源</div>
+    </div>
+
+    <div class="c-main">
+
+      <!-- Dashboard -->
+      <div class="c-page show" id="cDashboard">
+        <div class="c-page-header">
+          <h2>管理總覽</h2>
+          <p>契作主體管理畫面 — 一覽旗下農民、地塊、填報狀況與合作進度。</p>
+        </div>
+        <div class="c-stats">
+          <div class="c-stat-card"><div class="value">4</div><div class="label">旗下農民</div></div>
+          <div class="c-stat-card"><div class="value">5</div><div class="label">管理地塊</div></div>
+          <div class="c-stat-card"><div class="value">3.6 ha</div><div class="label">總面積</div></div>
+          <div class="c-stat-card"><div class="value">15</div><div class="label">本月填報</div><div class="trend">↑ +5</div></div>
+          <div class="c-stat-card"><div class="value">2</div><div class="label">缺漏待補</div></div>
+          <div class="c-stat-card"><div class="value">1</div><div class="label">草案進行中</div></div>
+        </div>
+
+        <div class="c-section">
+          <h3>⚠️ 缺漏提醒</h3>
+          <div class="c-table-wrap">
+            <table class="c-table">
+              <thead><tr><th>農民</th><th>地塊</th><th>缺漏項目</th><th>天數</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>王大明</td><td>硬質玉米田 D 區</td><td>灌溉紀錄未填用水量</td><td>7 天</td><td><a href="#">發送提醒</a></td></tr>
+                <tr><td>李阿花</td><td>油茶園 B 區</td><td>本月草生覆蓋照片未上傳</td><td>4 天</td><td><a href="#">發送提醒</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="c-section">
+          <h3>📋 本月填報概況</h3>
+          <div class="c-table-wrap">
+            <table class="c-table">
+              <thead><tr><th>農民</th><th>地塊數</th><th>本月筆數</th><th>最近填報</th><th>完成率</th></tr></thead>
+              <tbody>
+                <tr><td><strong>王大明</strong></td><td>2</td><td>7</td><td>2026-03-27</td><td><div style="display:flex;align-items:center;gap:4px"><div class="c-progress-bar" style="width:60px"><div class="c-progress-fill" style="width:90%"></div></div><span style="font-size:11px">90%</span></div></td></tr>
+                <tr><td><strong>李阿花</strong></td><td>1</td><td>3</td><td>2026-03-25</td><td><div style="display:flex;align-items:center;gap:4px"><div class="c-progress-bar" style="width:60px"><div class="c-progress-fill" style="width:70%"></div></div><span style="font-size:11px">70%</span></div></td></tr>
+                <tr><td><strong>陳進發</strong></td><td>1</td><td>3</td><td>2026-03-22</td><td><div style="display:flex;align-items:center;gap:4px"><div class="c-progress-bar" style="width:60px"><div class="c-progress-fill" style="width:60%"></div></div><span style="font-size:11px">60%</span></div></td></tr>
+                <tr><td><strong>張美玲</strong></td><td>1</td><td>2</td><td>2026-03-20</td><td><div style="display:flex;align-items:center;gap:4px"><div class="c-progress-bar" style="width:60px"><div class="c-progress-fill" style="width:50%"></div></div><span style="font-size:11px">50%</span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="c-section">
+          <h3>🤝 合作進度摘要</h3>
+          <div class="c-detail-grid">
+            <div class="c-detail-item"><div class="k">A 食品公司</div><div class="v"><span class="c-badge blue">契約協商中</span></div><div class="source">關注：大豆田 A、C 區</div></div>
+            <div class="c-detail-item"><div class="k">B 茶業集團</div><div class="v"><span class="c-badge yellow">評估中</span></div><div class="source">關注：茶園 E 區</div></div>
+            <div class="c-detail-item"><div class="k">方法學整備</div><div class="v"><span class="c-badge green">2/5 適用</span></div><div class="source">執行單位協作中</div></div>
+            <div class="c-detail-item"><div class="k">草案狀態</div><div class="v"><span class="c-badge purple">大豆田草擬中</span></div><div class="source">執行單位協作中</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Farmers -->
+      <div class="c-page" id="cFarmers">
+        <div class="c-page-header"><h2>👨‍🌾 旗下農民</h2><p>管理契作主體旗下的農民帳號與填報狀況。</p></div>
+        <div class="c-table-wrap">
+          <table class="c-table">
+            <thead><tr><th>農民</th><th>聯絡</th><th>負責地塊</th><th>本月填報</th><th>最近填報</th><th>缺漏</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td><strong>王大明</strong></td><td>09xx-xxx-xxx</td><td>大豆田A、硬質玉米D</td><td>7 筆</td><td>03-27</td><td><span class="c-badge yellow">1 項</span></td><td><a href="#">查看</a> ・<a href="#">提醒</a></td></tr>
+              <tr><td><strong>李阿花</strong></td><td>09xx-xxx-xxx</td><td>油茶園 B</td><td>3 筆</td><td>03-25</td><td><span class="c-badge yellow">1 項</span></td><td><a href="#">查看</a> ・<a href="#">提醒</a></td></tr>
+              <tr><td><strong>陳進發</strong></td><td>09xx-xxx-xxx</td><td>大豆田 C</td><td>3 筆</td><td>03-22</td><td><span class="c-badge green">無</span></td><td><a href="#">查看</a></td></tr>
+              <tr><td><strong>張美玲</strong></td><td>09xx-xxx-xxx</td><td>茶園 E</td><td>2 筆</td><td>03-20</td><td><span class="c-badge green">無</span></td><td><a href="#">查看</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Fields -->
+      <div class="c-page" id="cFields">
+        <div class="c-page-header"><h2>🗺️ 地塊清單 — 場域與履約進度</h2><p>追蹤每個地塊從盤點到契約簽訂之進度。</p></div>
+        <div class="c-table-wrap">
+          <table class="c-table">
+            <thead><tr><th>地塊</th><th>類型</th><th>作物</th><th>面積</th><th>農民</th><th>潛在場域</th><th>現勘</th><th>可行性</th><th>方法學</th><th>草案</th><th>契約</th></tr></thead>
+            <tbody>
+              <tr><td><strong>大豆田 A</strong></td><td><span class="c-badge green">雜糧</span></td><td>大豆</td><td>0.8ha</td><td>王大明</td><td><span class="c-badge green">✓</span></td><td><span class="c-badge green">✓</span></td><td><span class="c-badge green">✓</span></td><td><span class="c-badge green">適用</span></td><td><span class="c-badge blue">草擬中</span></td><td><span class="c-badge yellow">協商</span></td></tr>
+              <tr><td><strong>油茶園 B</strong></td><td><span class="c-badge blue">特作</span></td><td>油茶</td><td>1.2ha</td><td>李阿花</td><td><span class="c-badge green">✓</span></td><td><span class="c-badge green">✓</span></td><td><span class="c-badge yellow">撰擬</span></td><td><span class="c-badge yellow">評估</span></td><td><span class="c-badge gray">—</span></td><td><span class="c-badge gray">—</span></td></tr>
+              <tr><td><strong>大豆田 C</strong></td><td><span class="c-badge green">雜糧</span></td><td>大豆</td><td>0.5ha</td><td>陳進發</td><td><span class="c-badge green">✓</span></td><td><span class="c-badge yellow">待排</span></td><td><span class="c-badge gray">—</span></td><td><span class="c-badge gray">待評</span></td><td><span class="c-badge gray">—</span></td><td><span class="c-badge gray">—</span></td></tr>
+              <tr><td><strong>玉米田 D</strong></td><td><span class="c-badge green">雜糧</span></td><td>硬質玉米</td><td>1.0ha</td><td>王大明</td><td><span class="c-badge green">✓</span></td><td><span class="c-badge green">✓</span></td><td><span class="c-badge yellow">撰擬</span></td><td><span class="c-badge yellow">評估</span></td><td><span class="c-badge gray">—</span></td><td><span class="c-badge gray">—</span></td></tr>
+              <tr><td><strong>茶園 E</strong></td><td><span class="c-badge blue">特作</span></td><td>茶</td><td>0.6ha</td><td>張美玲</td><td><span class="c-badge green">✓</span></td><td><span class="c-badge yellow">待排</span></td><td><span class="c-badge gray">—</span></td><td><span class="c-badge gray">待評</span></td><td><span class="c-badge gray">—</span></td><td><span class="c-badge gray">—</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Methodology -->
+      <div class="c-page" id="cMethodology">
+        <div class="c-page-header"><h2>🔬 方法學整備進度 <span class="c-collab-tag">執行單位協作</span></h2><p>由執行單位協助進行方法學適用性判讀，契作主體可追蹤進度與結果。</p></div>
+
+        <div class="c-section">
+          <h3>雜糧與特作之方法學差異</h3>
+          <div class="diff-box">
+            <div class="diff-col grain"><h5>🌾 雜糧（大豆、硬質玉米）</h5><ul><li>AL-TMS0001 改進農業土壤管理</li><li>施肥優化、殘體翻埋、低度耕作</li><li>氮肥 N₂O + 固氮排放（大豆）</li><li>土壤有機碳增量為主要碳匯</li></ul></div>
+            <div class="diff-col special"><h5>🌳 特作（油茶、茶園）</h5><ul><li>AL-TMS0001 + AL-TMS0004 草生管理</li><li>草生栽培、覆蓋管理、有機質基肥</li><li>需評估草生穩定性與覆蓋率</li><li>土壤碳增量 + 草生覆蓋碳累積</li></ul></div>
+          </div>
+        </div>
+
+        <div class="c-section">
+          <h3>AL-TMS0001 檢核 — 大豆田 A 區</h3>
+          <ul class="c-checklist">
+            <li><span class="check pass">✓</span><div><strong>農地合法性</strong><br><span style="font-size:11px;color:#6b7280">特定農業區，具合法耕作權</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>土地歷史使用</strong><br><span style="font-size:11px;color:#6b7280">前期水稻轉作大豆，非新開墾地</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>管理措施變更</strong><br><span style="font-size:11px;color:#6b7280">新增有機質投入、殘體翻埋、合理化施肥</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>氮肥排放源</strong><br><span style="font-size:11px;color:#6b7280">施肥紀錄可追溯 N 投入量（API 帶入成分）</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>固氮作物排放</strong><br><span style="font-size:11px;color:#6b7280">大豆為固氮作物，已納入計算</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>土壤有機碳基線</strong><br><span style="font-size:11px;color:#6b7280">SOC 1.82%，已採樣</span></div></li>
+            <li><span class="check warn">!</span><div><strong>活動數據完整性</strong><br><span style="font-size:11px;color:#6b7280">灌溉紀錄待補充</span></div></li>
+          </ul>
+        </div>
+
+        <div class="c-section">
+          <h3>📝 判讀備註 <span class="c-collab-tag">執行單位填寫</span></h3>
+          <textarea class="c-note-input">大豆田 A 區基本符合 AL-TMS0001 適用條件。灌溉活動數據待補。油茶園與茶園需完成現勘後評估 AL-TMS0004 適用性。</textarea>
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button class="c-btn c-btn-primary">💾 儲存</button>
+            <button class="c-btn c-btn-outline">📤 匯出判讀報告</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MRV -->
+      <div class="c-page" id="cMrv">
+        <div class="c-page-header"><h2>📊 MRV／草案準備 <span class="c-collab-tag">執行單位協作</span></h2><p>由執行單位協助 MRV 整備與草案撰擬，契作主體可追蹤進度。</p></div>
+        <div class="c-stats">
+          <div class="c-stat-card"><div class="value" style="font-size:16px">大豆田 A+C</div><div class="label">專案邊界</div></div>
+          <div class="c-stat-card"><div class="value">85%</div><div class="label">資料完備率</div><div class="c-progress-bar"><div class="c-progress-fill" style="width:85%"></div></div></div>
+          <div class="c-stat-card"><div class="value">草擬中</div><div class="label">草案狀態</div></div>
+        </div>
+
+        <div class="c-section">
+          <h3>活動數據狀態</h3>
+          <ul class="c-checklist">
+            <li><span class="check pass">✓</span><div><strong>施肥紀錄</strong> — 3 筆已確認，成分已由 API 帶入<br><span style="font-size:10px;color:#6b7280">農民填報 + API → 契作主體確認</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>整地紀錄</strong> — 淺耕，含照片<br><span style="font-size:10px;color:#6b7280">農民填報 → 契作主體確認</span></div></li>
+            <li><span class="check warn">!</span><div><strong>灌溉紀錄</strong> — 用水量待補<br><span style="font-size:10px;color:#6b7280">已發送提醒</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>殘體管理</strong> — 全量翻埋，含照片<br><span style="font-size:10px;color:#6b7280">農民填報 → 契作主體確認</span></div></li>
+            <li><span class="check pass">✓</span><div><strong>氣象資料</strong> — 已對應嘉義氣象站<br><span style="font-size:10px;color:#6b7280">API 自動帶入</span></div></li>
+          </ul>
+        </div>
+
+        <div class="c-section">
+          <h3>⚖️ 外加性評估 <span class="c-collab-tag">執行單位填寫</span></h3>
+          <div class="c-detail-grid">
+            <div class="c-detail-item"><div class="k">法規外加性</div><div class="v"><span class="c-badge green">符合</span></div></div>
+            <div class="c-detail-item"><div class="k">財務外加性</div><div class="v"><span class="c-badge yellow">評估中</span></div></div>
+            <div class="c-detail-item"><div class="k">障礙分析</div><div class="v"><span class="c-badge green">符合</span></div></div>
+            <div class="c-detail-item"><div class="k">常規實踐</div><div class="v"><span class="c-badge green">非常規</span></div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="c-btn c-btn-primary">📄 產出草案初稿</button>
+          <button class="c-btn c-btn-outline">📤 匯出 MRV 報告</button>
+          <button class="c-btn c-btn-outline">📋 匯出場域摘要</button>
+        </div>
+      </div>
+
+      <!-- Cooperation -->
+      <div class="c-page" id="cCooperation">
+        <div class="c-page-header"><h2>🤝 合作進度</h2><p>企業媒合、契約協商與利害關係人對話追蹤。企業端不另建獨立系統，以摘要資訊呈現。</p></div>
+        <div class="c-section">
+          <h3>企業媒合清單</h3>
+          <div class="c-table-wrap">
+            <table class="c-table">
+              <thead><tr><th>企業</th><th>產業</th><th>狀態</th><th>關注場域</th><th>碳權需求</th><th>最近聯繫</th></tr></thead>
+              <tbody>
+                <tr><td><strong>A 食品公司</strong></td><td>食品加工</td><td><span class="c-badge blue">契約協商中</span></td><td>大豆田 A、C</td><td>50 tCO₂e/年</td><td>03-20</td></tr>
+                <tr><td><strong>B 茶業集團</strong></td><td>飲料製造</td><td><span class="c-badge yellow">評估中</span></td><td>茶園 E</td><td>20 tCO₂e/年</td><td>03-15</td></tr>
+                <tr><td><strong>C 量販通路</strong></td><td>零售</td><td><span class="c-badge green">已表達意願</span></td><td>全部場域</td><td>100 tCO₂e/年</td><td>03-10</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="c-btn c-btn-outline">📤 匯出合作摘要</button>
+          <button class="c-btn c-btn-outline">📋 匯出媒合實績</button>
+        </div>
+      </div>
+
+      <!-- API -->
+      <div class="c-page" id="cApi">
+        <div class="c-page-header"><h2>🔗 資料來源與串接</h2><p>串接農業部開放資料，減少人工輸入，提升資料品質。</p></div>
+        <div class="c-table-wrap">
+          <table class="c-table">
+            <thead><tr><th>資料項目</th><th>串接目的</th><th>減少之人工作業</th><th>階段</th></tr></thead>
+            <tbody>
+              <tr><td><strong>肥料成分</strong></td><td>選肥料即帶入 N-P-K、登記證號</td><td>農民免填成分</td><td><span class="c-badge green">第一期</span></td></tr>
+              <tr><td><strong>氣象測站位置</strong></td><td>依座標自動配對最近測站</td><td>免手動對應</td><td><span class="c-badge green">第一期</span></td></tr>
+              <tr><td><strong>自動氣象站</strong></td><td>氣溫、濕度、日照自動記錄</td><td>免手填氣象</td><td><span class="c-badge green">第一期</span></td></tr>
+              <tr><td><strong>自動雨量站</strong></td><td>降雨量自動記錄</td><td>免手填降雨</td><td><span class="c-badge green">第一期</span></td></tr>
+              <tr><td><strong>作物代碼</strong></td><td>作物選單標準化</td><td>統一分類</td><td><span class="c-badge green">第一期</span></td></tr>
+              <tr><td><strong>植物疫情</strong></td><td>病蟲害預警參考</td><td>輔助決策</td><td><span class="c-badge blue">第二期</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function switchMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('overviewApp').classList.remove('show');
+  document.getElementById('farmerApp').classList.remove('show');
+  document.getElementById('contractorApp').classList.remove('show');
+  document.getElementById('fBottomNav').style.display = 'none';
+  if (mode==='overview'){document.getElementById('overviewApp').classList.add('show');document.querySelectorAll('.mode-btn')[0].classList.add('active')}
+  else if(mode==='contractor'){document.getElementById('contractorApp').classList.add('show');document.querySelectorAll('.mode-btn')[1].classList.add('active')}
+  else{document.getElementById('farmerApp').classList.add('show');document.getElementById('fBottomNav').style.display='flex';document.querySelectorAll('.mode-btn')[2].classList.add('active')}
+}
+
+const fPages={home:'fHome',record:'fRecord',history:'fHistory',fields:'fFields'};
+const fTitles={home:'農耕紀錄',record:'快速填報',history:'歷史紀錄',fields:'我的場域'};
+let fStack=['home'];
+function farmerGo(p){Object.values(fPages).forEach(id=>document.getElementById(id).classList.remove('show'));document.getElementById(fPages[p]).classList.add('show');document.getElementById('fHeaderTitle').textContent=fTitles[p];document.getElementById('fBackBtn').classList.toggle('show',p!=='home');document.querySelectorAll('.f-bottom-nav button').forEach((b,i)=>b.classList.toggle('active',['home','record','history','fields'][i]===p));if(p==='record'){document.getElementById('recordStep1').style.display='';document.getElementById('recordStep2').style.display='none';document.getElementById('step1dot').className='f-step active';document.getElementById('step2dot').className='f-step'}fStack.push(p)}
+function farmerBack(){fStack.pop();farmerGo(fStack[fStack.length-1]||'home')}
+function recordNextStep(){document.getElementById('recordStep1').style.display='none';document.getElementById('recordStep2').style.display='';document.getElementById('step1dot').className='f-step done';document.getElementById('step2dot').className='f-step active';autoFillMaterial()}
+function recordPrevStep(){document.getElementById('recordStep1').style.display='';document.getElementById('recordStep2').style.display='none';document.getElementById('step1dot').className='f-step active';document.getElementById('step2dot').className='f-step'}
+function autoFillMaterial(){document.getElementById('autoMaterialInfo').style.display=(document.getElementById('materialSelect').value==='taiphos5')?'':'none'}
+function submitRecord(){document.getElementById('successModal').classList.add('show')}
+function closeModal(){document.getElementById('successModal').classList.remove('show')}
+
+const cNavMap={dashboard:'cDashboard',farmers:'cFarmers',fields:'cFields',methodology:'cMethodology',mrv:'cMrv',cooperation:'cCooperation',api:'cApi'};
+const cNavIdx={dashboard:0,farmers:1,fields:2,methodology:3,mrv:4,cooperation:5,api:6};
+function cGo(p){Object.values(cNavMap).forEach(id=>document.getElementById(id).classList.remove('show'));document.getElementById(cNavMap[p]).classList.add('show');document.querySelectorAll('.c-sidebar .nav-item').forEach(i=>i.classList.remove('active'));const items=document.querySelectorAll('.c-sidebar .nav-item');if(items[cNavIdx[p]])items[cNavIdx[p]].classList.add('active')}
+
+document.querySelectorAll('.f-filter-chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.f-filter-chip').forEach(x=>x.classList.remove('active'));c.classList.add('active')}));
+document.getElementById('fBottomNav').style.display='none';
+</script>
+</body>
+</html>
